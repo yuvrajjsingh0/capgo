@@ -141,7 +141,7 @@ watchEffect(async () => {
   <tr class="cursor-pointer text-slate-800 dark:text-white" @click="openVersion(props.version)">
     <td class="p-2">
       <div class="text-left">
-        {{ props.version.name }} ( {{ showSize() }} )
+        {{ props.version.name }}
       </div>
     </td>
     <td class="p-2">
@@ -156,7 +156,7 @@ watchEffect(async () => {
     </td>
     <td class="" @click.stop="deleteVersion(props.version)">
       <div class="text-left">
-        <IconTrash class="text-red-600 text-lg" />
+        <IconTrash class="text-lg text-red-600" />
       </div>
     </td>
   </tr>
