@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watchEffect } from 'vue'
+import { computed, onMounted, reactive, ref, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { initDropdowns } from 'flowbite'
@@ -13,7 +13,7 @@ interface Device {
     name: string
   }
 }
-const filters = ref({
+const filters = reactive({
   override: false,
 })
 const { t } = useI18n()
@@ -35,7 +35,7 @@ const fetchLimit = 40
 let fetchOffset = 0
 const isFilter = computed(() => {
   return Object
-    .values(filters.value)
+    .values(filters)
     .reduce((p, v) => v || p, false)
 })
 
@@ -80,7 +80,7 @@ const getDeviceOverrideIds = async () => {
       ...(deviceOverride ? deviceOverride.map(d => d.device_id) : []),
     ]),
   ]
-  console.log('deviceIds', deviceIds)
+  // console.log('deviceIds', deviceIds)
   return deviceIds
 }
 
@@ -235,7 +235,7 @@ watchEffect(async () => {
           <ul class="space-y-2 text-sm" aria-labelledby="dropdownDefault">
             <li v-for="(f, i) in Object.keys(filters)" :key="i" class="flex items-center">
               <input
-                id="apple" v-model="filters[f]" type="checkbox" :checked="filters[f]"
+                id="apple" v-model="(filters as any)[f]" type="checkbox" :checked="(filters as any)[f]"
                 class="w-4 h-4 bg-gray-100 border-gray-300 rounded text-primary-600 focus:ring-primary-500 dark:focus:ring-primary-600 dark:ring-offset-gray-700 focus:ring-2 dark:bg-gray-600 dark:border-gray-500"
               >
 
