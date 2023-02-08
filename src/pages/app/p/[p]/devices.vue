@@ -85,6 +85,27 @@ const loadData = async () => {
   }
 }
 
+const getDeviceOverrideIds = async () => {
+  const { data: channelDevices } = await supabase
+    .from('channel_devices')
+    .select('device_id')
+    .eq('app_id', appId.value)
+  const { data: deviceOverride } = await supabase
+    .from('devices_override')
+    .select('device_id')
+    .eq('app_id', appId.value)
+
+  // create a list of unique id
+  const deviceIds = [
+    ...new Set([
+      ...(channelDevices ? channelDevices.map(d => d.device_id) : []),
+      ...(deviceOverride ? deviceOverride.map(d => d.device_id) : []),
+    ]),
+  ]
+  console.log('deviceIds', deviceIds)
+  return deviceIds
+}
+
 const searchDevice = async () => {
   try {
     const { data: dataDev } = await supabase
