@@ -14,7 +14,7 @@ interface Device {
   }
 }
 const filters = ref({
-  override: true,
+  override: false,
 })
 const { t } = useI18n()
 const supabase = useSupabase()
@@ -30,6 +30,14 @@ const pageNumbers = ref<number[]>([1])
 const filteredPageNumbers = ref<number[]>([1])
 const appId = ref('')
 const offset = 10
+
+const fetchLimit = 40
+let fetchOffset = 0
+const isFilter = computed(() => {
+  return Object
+    .values(filters.value)
+    .reduce((p, v) => v || p, false)
+})
 
 const devicesFiltered = computed(() => {
   if (search.value)
@@ -55,36 +63,6 @@ const display = (pageNumber: number) => {
   currentPageNumber.value = pageNumber
 }
 
-const loadData = async () => {
-  try {
-    const { data: dataDev } = await supabase
-      .from('devices')
-      .select(`
-        app_id,
-        device_id,
-        platform,
-        plugin_version,
-        version (
-            name
-        ),
-        created_at,
-        updated_at
-      `)
-      .eq('app_id', appId.value)
-      .order('updated_at', { ascending: false })
-    if (!dataDev)
-      return
-    devices.value.push(...dataDev as (Database['public']['Tables']['devices']['Row'] & Device)[])
-
-    const pages = Array.from(Array(Math.ceil(devices.value.length / offset)).keys())
-    pageNumbers.value = pages.slice(1, pages.length)
-    display(currentPageNumber.value)
-  }
-  catch (error) {
-    console.error(error)
-  }
-}
-
 const getDeviceOverrideIds = async () => {
   const { data: channelDevices } = await supabase
     .from('channel_devices')
@@ -104,6 +82,70 @@ const getDeviceOverrideIds = async () => {
   ]
   console.log('deviceIds', deviceIds)
   return deviceIds
+}
+
+const loadData = async () => {
+  try {
+    // create a date object for the last day of the previous month with dayjs
+    let total = 0
+    if (isFilter.value) {
+      // list all devices override
+      const deviceIds = await getDeviceOverrideIds()
+      const { data: dataDev, count } = await supabase
+        .from('devices')
+        .select(`
+        device_id,
+        platform,
+        plugin_version,
+        version (
+            name
+        ),
+        created_at,
+        updated_at
+      `, { count: 'exact' })
+        .eq('app_id', appId.value)
+        .order('updated_at', { ascending: false })
+        .in('device_id', deviceIds)
+      if (!dataDev)
+        return
+      devices.value.push(...dataDev as (Database['public']['Tables']['devices']['Row'] & Device)[])
+      total = dataDev.length
+      const pages = Array.from(Array(Math.ceil(devices.value.length / offset)).keys())
+      console.log('count', count)
+      pageNumbers.value = pages.slice(1, pages.length)
+      display(currentPageNumber.value)
+    }
+    else {
+      const { data: dataDev, count } = await supabase
+        .from('devices')
+        .select(`
+        device_id,
+        platform,
+        plugin_version,
+        version (
+            name
+        ),
+        created_at,
+        updated_at
+      `, { count: 'exact' })
+        .eq('app_id', appId.value)
+        .order('updated_at', { ascending: false })
+        .range(fetchOffset, fetchOffset + fetchLimit - 1)
+      if (!dataDev)
+        return
+      devices.value.push(...dataDev as (Database['public']['Tables']['devices']['Row'] & Device)[])
+      const pages = Array.from(Array(Math.ceil(devices.value.length / offset)).keys())
+      pageNumbers.value = pages.slice(1, pages.length)
+      console.log('count', count)
+      display(currentPageNumber.value)
+    }
+
+    if (total === fetchLimit)
+      fetchOffset += fetchLimit
+  }
+  catch (error) {
+    console.error(error)
+  }
 }
 
 const searchDevice = async () => {
