@@ -94,7 +94,7 @@ watchEffect(async () => {
   </div>
   <div v-else class="w-full h-full">
     <div class="w-full h-full px-4 py-8 mb-8 overflow-y-scroll sm:px-6 lg:px-8 max-h-fit">
-      <div class="pb-8 lg:max-w-xl lg:mx-auto sm:text-center">
+      <div class="pb-2 lg:max-w-xl lg:mx-auto sm:text-center">
         <h2 class="text-3xl font-bold text-gray-900 dark:text-white sm:text-4xl xl:text-5xl font-pj">
           {{ app?.name }}
         </h2>
