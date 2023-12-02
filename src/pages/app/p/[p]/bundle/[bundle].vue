@@ -30,6 +30,7 @@ const loading = ref(true)
 const version = ref<Database['public']['Tables']['app_versions']['Row']>()
 const channels = ref<(Database['public']['Tables']['channels']['Row'])[]>([])
 const channel = ref<(Database['public']['Tables']['channels']['Row'])>()
+const bundleChannels = ref<(Database['public']['Tables']['channels']['Row'])[]>([])
 const version_meta = ref<Database['public']['Tables']['app_versions_meta']['Row']>()
 const secondaryChannel = ref<boolean>(false)
 
@@ -55,6 +56,7 @@ async function getChannels() {
   if (!version.value)
     return
   channel.value = undefined
+  bundleChannels.value = []
   const { data: dataChannel } = await supabase
     .from('channels')
     .select()
@@ -62,11 +64,13 @@ async function getChannels() {
     .order('updated_at', { ascending: false })
   channels.value = dataChannel || channels.value
   // search if the bundle is used in a channel
+  console.log("channels", channels.value);
   channels.value.forEach((chan) => {
     const v: number = chan.version as any
     if (version.value && (v === version.value.id || version.value.id === chan.secondVersion)) {
-      channel.value = chan
+      bundleChannels.value.push(chan)
       secondaryChannel.value = (version.value.id === chan.secondVersion)
+      console.log("channels", bundleChannels.value, secondaryChannel.value);
     }
   })
 }
@@ -291,7 +295,8 @@ async function ASChannelChooser() {
   }
   displayStore.showActionSheet = true
 }
-async function openChannel() {
+async function openChannel(selChannel: Database['public']['Tables']['channels']['Row']) {
+  channel.value = selChannel
   if (!version.value || !main.auth)
     return
   if (!channel.value)
@@ -518,8 +523,13 @@ async function saveCustomId(input: string) {
             <InfoRow v-if="version_meta?.uninstalls" :label="t('uninstall')" :value="version_meta.uninstalls.toLocaleString()" />
             <InfoRow v-if="version_meta?.fails" :label="t('fail')" :value="version_meta.fails.toLocaleString()" />
             <!-- <InfoRow v-if="version_meta?.installs && version_meta?.fails" :label="t('percent-fail')" :value="failPercent" /> -->
-            <InfoRow v-if="channel" :label="t('channel')" :value="(channel!.enableAbTesting || channel!.enable_progressive_deploy) ? (secondaryChannel ? `${channel!.name}-B` : `${channel!.name}-A`) : channel!.name" :is-link="true" @click="openChannel()" />
-            <InfoRow v-else :label="t('channel')" :value="t('set-bundle')" :is-link="true" @click="openChannel()" />
+            <!-- <InfoRow v-if="bundleChannels" :label="t('channel')" :value="(channel!.enableAbTesting || channel!.enable_progressive_deploy) ? (secondaryChannel ? `${channel!.name}-B` : `${channel!.name}-A`) : channel!.name" :is-link="true" @click="openChannel()" /> -->
+            <InfoRow v-if="bundleChannels && bundleChannels.length > 0" :label="t('channel')" value="">
+              <span v-for="channel in bundleChannels"
+              class='cursor-pointer underline underline-offset-4 text-blue-600 active dark:text-blue-500 font-bold text-dust pr-3'
+              @click="openChannel(channel)">{{ (channel!.enableAbTesting || channel!.enable_progressive_deploy) ? (secondaryChannel ? `${channel!.name}-B` : `${channel!.name}-A`) : channel!.name }}</span>
+            </InfoRow>
+            <InfoRow v-else :label="t('channel')" :value="t('set-bundle')" :is-link="true" @click="openChannel(channel!)" />
             <!-- session_key -->
             <InfoRow v-if="version.session_key" :label="t('session_key')" :value="hideString(version.session_key)" :is-link="true" @click="copyToast(version?.session_key || '')" />
             <!-- version.external_url -->
